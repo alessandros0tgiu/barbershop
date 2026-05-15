@@ -1,94 +1,129 @@
 "use client";
 import { useState, useEffect } from "react";
-import Dashboard from "@/components/Dashboard";
+import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+const SERVICES = [
+  { id: 1, name: "Taglio Classic", price: 25, duration: 30 },
+  { id: 2, name: "Modellatura Barba", price: 15, duration: 20 },
+  { id: 3, name: "Taglio + Barba VIP", price: 40, duration: 60 },
+];
+
+const HOURS = ["09:00", "10:00", "11:00", "12:00", "15:00", "16:00", "17:00", "18:00"];
+
+export default function DashboardPage() {
+  const [selectedService, setSelectedService] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedHour, setSelectedHour] = useState("");
+  const [user, setUser] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const user = localStorage.getItem("barber_user");
-    if (user) setIsLoggedIn(true);
-  }, []);
-
-  const handleAuth = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    const storedUsers = JSON.parse(localStorage.getItem("registered_users") || "[]");
-
-    if (isRegistering) {
-      const userExists = storedUsers.find((u: any) => u.email === email);
-      if (userExists) {
-        setError("Email già registrata!");
-      } else {
-        storedUsers.push({ email, password });
-        localStorage.setItem("registered_users", JSON.stringify(storedUsers));
-        alert("Account creato con successo!");
-        setIsRegistering(false);
-      }
+    const loggedUser = localStorage.getItem("barber_user");
+    if (!loggedUser) {
+      router.push("/login");
     } else {
-      const validUser = storedUsers.find(
-        (u: any) => u.email === email && u.password === password
-      );
-      if (validUser) {
-        localStorage.setItem("barber_user", email);
-        setIsLoggedIn(true);
-      } else {
-        setError("Account non registrato o dati errati!");
-      }
+      setUser(loggedUser);
     }
+  }, [router]);
+
+  const handleBooking = () => {
+    if (!selectedService || !selectedDate || !selectedHour) return;
+
+    const newBooking = {
+      user: user,
+      service: SERVICES.find((s) => s.id === selectedService)?.name,
+      date: selectedDate,
+      hour: selectedHour,
+    };
+
+    // Salvataggio per l'Admin
+    const existingBookings = JSON.parse(localStorage.getItem("all_bookings") || "[]");
+    existingBookings.push(newBooking);
+    localStorage.setItem("all_bookings", JSON.stringify(existingBookings));
+
+    alert(`Ottimo! Appuntamento confermato per il ${selectedDate} alle ${selectedHour}`);
+
+    // Reset campi
+    setSelectedService(null);
+    setSelectedDate("");
+    setSelectedHour("");
   };
 
-  if (isLoggedIn) return <Dashboard />;
+  if (!user) return null;
 
   return (
-    <div className="page-container">
-      <div className="premium-card">
-        <div className="logo-section">
-          <h1 className="logo">Barber<span className="gold-italic">Shop</span></h1>
-          <p className="sub-logo">Sassari Luxury</p>
+    <div className="dashboard-container">
+      <nav className="nav-bar">
+        <h1 className="logo" style={{ fontSize: "1.5rem", margin: 0 }}>
+          Barber<span className="gold-italic">Shop</span>
+        </h1>
+        <button
+          onClick={() => {
+            localStorage.removeItem("barber_user");
+            router.push("/login");
+          }}
+          className="text-button"
+          style={{ width: "auto", marginTop: 0 }}
+        >
+          Esci
+        </button>
+      </nav>
+
+      <main style={{ padding: "40px 20px", maxWidth: "800px", margin: "0 auto" }}>
+        <h2 style={{ textAlign: "center", textTransform: "uppercase", marginBottom: "30px" }}>
+          Prenota il tuo trattamento
+        </h2>
+
+        {/* STEP 1: SERVIZI */}
+        <div className="service-grid">
+          {SERVICES.map((s) => (
+            <div
+              key={s.id}
+              onClick={() => setSelectedService(s.id)}
+              className={`service-card ${selectedService === s.id ? "selected" : ""}`}
+            >
+              <div>
+                <h3 style={{ margin: "0 0 5px 0", textTransform: "uppercase" }}>{s.name}</h3>
+                <p style={{ margin: 0, color: "#94a3b8", fontSize: "0.9rem" }}>{s.duration} min</p>
+              </div>
+              <span style={{ fontSize: "1.5rem", fontWeight: "900", color: "#c5a059" }}>{s.price}€</span>
+            </div>
+          ))}
         </div>
 
-        <form onSubmit={handleAuth} className="auth-form">
-          <h3 className="form-title">
-            {isRegistering ? "Nuovo Account" : "Accesso Clienti"}
-          </h3>
+        {/* STEP 2: DATA E ORA */}
+        {selectedService && (
+          <div className="booking-section animate-fadeIn" style={{ marginTop: "40px" }}>
+            <h3 className="form-title">Seleziona Data e Ora</h3>
+            <input
+              type="date"
+              className="premium-input"
+              style={{ marginBottom: "20px" }}
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              min={new Date().toISOString().split("T")[0]}
+            />
 
-          <input
-            type="email"
-            placeholder="Email"
-            className="premium-input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            className="premium-input"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+            <div className="hour-grid">
+              {HOURS.map((h) => (
+                <button
+                  key={h}
+                  onClick={() => setSelectedHour(h)}
+                  className={`hour-pill ${selectedHour === h ? "selected" : ""}`}
+                >
+                  {h}
+                </button>
+              ))}
+            </div>
 
-          {error && <p className="error-message">{error}</p>}
-
-          <button type="submit" className="premium-button">
-            {isRegistering ? "Crea Account ora" : "Entra nel Salone"}
-          </button>
-        </form>
-
-        <button 
-          onClick={() => { setIsRegistering(!isRegistering); setError(""); }}
-          className="text-button"
-        >
-          {isRegistering ? "Hai già un account? Accedi qui" : "Primo appuntamento? Registrati ora"}
-        </button>
-      </div>
+            {selectedDate && selectedHour && (
+              <button onClick={handleBooking} className="premium-button" style={{ marginTop: "30px" }}>
+                Conferma Prenotazione
+              </button>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
