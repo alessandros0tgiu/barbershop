@@ -25,7 +25,7 @@ export default function AdminDashboard() {
         // CONTROLLO SICUREZZA
         const token = localStorage.getItem("admin_token");
         if (token !== "authenticated_barber") {
-            router.push("/admin/login"); 
+            router.push("/admin/login");
         } else {
             setIsAdmin(true);
             loadBookings();
@@ -59,7 +59,7 @@ export default function AdminDashboard() {
     // Filtro locale basato sulla data scelta nel calendario
     const dailyBookings = bookings.filter(b => b.date === filterDate);
 
-    if (!isAdmin) return null; 
+    if (!isAdmin) return null;
 
     return (
         <div className="dashboard-container">
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
                                         <span style={{ color: '#c5a059', fontWeight: 'bold', fontSize: '0.7rem', textTransform: 'uppercase' }}>
                                             Confermato
                                         </span>
-                                        <button 
+                                        <button
                                             onClick={() => deleteBooking(index)}
                                             style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 'bold' }}
                                         >
